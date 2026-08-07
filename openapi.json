@@ -1,0 +1,747 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "x402-price-watch",
+    "version": "0.1.0",
+    "description": "Pay-per-poll price watching. Every GET /check returns a fresh snapshot, the delta vs the cursor you sent, a trend read, and a new cursor. Paid routes respond 402 with a dual-rail x402 challenge (USDC on Base and USDC on Solana) until an X-PAYMENT header settles on either rail.",
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    },
+    "contact": {
+      "name": "nirholas",
+      "email": "nichxbt@gmail.com",
+      "url": "https://github.com/nirholas/x402-price-watch"
+    }
+  },
+  "paths": {
+    "/check": {
+      "get": {
+        "summary": "One price poll ($0.002)",
+        "description": "Snapshot + delta vs your cursor + trend + a new cursor. market=crypto is always live (CoinGecko, keyless); market=flight is live when Amadeus credentials are set, deterministic fixtures otherwise.",
+        "parameters": [
+          {
+            "name": "market",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "crypto",
+                "flight"
+              ]
+            }
+          },
+          {
+            "name": "ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "crypto only. Comma-separated CoinGecko ids, max 25, e.g. bitcoin,ethereum"
+          },
+          {
+            "name": "vs",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "usd"
+            },
+            "description": "crypto only. Quote currency."
+          },
+          {
+            "name": "origin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "flight only. IATA airport code."
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "flight only. IATA airport code."
+          },
+          {
+            "name": "departureDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "flight only. YYYY-MM-DD."
+          },
+          {
+            "name": "returnDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "flight only."
+          },
+          {
+            "name": "adults",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "flight only."
+          },
+          {
+            "name": "cabin",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "flight only. ECONOMY | PREMIUM_ECONOMY | BUSINESS | FIRST."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque signed cursor from your previous /check. Scoped to the exact same parameters; a mismatch is reported in delta.cursorStatus rather than failing the call."
+          },
+          {
+            "name": "X-PAYMENT",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Base64-encoded x402 payment payload. Its `network` selects the rail (base-sepolia/base or solana/solana-devnet). Omit it to receive the 402 challenge."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed snapshot + delta + trend + next cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "check": {
+                      "type": "object",
+                      "properties": {
+                        "payload": {
+                          "type": "object",
+                          "properties": {
+                            "checkId": {
+                              "type": "string"
+                            },
+                            "market": {
+                              "type": "string",
+                              "enum": [
+                                "crypto",
+                                "flight"
+                              ]
+                            },
+                            "watchKey": {
+                              "type": "string",
+                              "description": "Normalized watch identity. Cursors are scoped to it."
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "coingecko",
+                                "amadeus",
+                                "fixture"
+                              ]
+                            },
+                            "live": {
+                              "type": "boolean"
+                            },
+                            "observedAt": {
+                              "type": "string"
+                            },
+                            "snapshot": {
+                              "type": "object",
+                              "properties": {
+                                "items": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "priceUsd": {
+                                        "type": "number"
+                                      },
+                                      "extra": {
+                                        "type": "object"
+                                      }
+                                    }
+                                  }
+                                },
+                                "missing": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            "delta": {
+                              "type": "object",
+                              "properties": {
+                                "hasCursor": {
+                                  "type": "boolean"
+                                },
+                                "cursorStatus": {
+                                  "type": "string",
+                                  "enum": [
+                                    "none",
+                                    "applied",
+                                    "malformed",
+                                    "bad_signature",
+                                    "wrong_watch",
+                                    "unsupported_version"
+                                  ]
+                                },
+                                "since": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "elapsedSeconds": {
+                                  "type": [
+                                    "integer",
+                                    "null"
+                                  ]
+                                },
+                                "changes": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "id": {
+                                        "type": "string"
+                                      },
+                                      "label": {
+                                        "type": "string"
+                                      },
+                                      "previousUsd": {
+                                        "type": [
+                                          "number",
+                                          "null"
+                                        ]
+                                      },
+                                      "currentUsd": {
+                                        "type": "number"
+                                      },
+                                      "absUsd": {
+                                        "type": [
+                                          "number",
+                                          "null"
+                                        ]
+                                      },
+                                      "pct": {
+                                        "type": [
+                                          "number",
+                                          "null"
+                                        ]
+                                      },
+                                      "direction": {
+                                        "type": "string",
+                                        "enum": [
+                                          "up",
+                                          "down",
+                                          "flat",
+                                          "new"
+                                        ]
+                                      }
+                                    }
+                                  }
+                                },
+                                "summary": {
+                                  "type": [
+                                    "object",
+                                    "null"
+                                  ],
+                                  "properties": {
+                                    "up": {
+                                      "type": "integer"
+                                    },
+                                    "down": {
+                                      "type": "integer"
+                                    },
+                                    "flat": {
+                                      "type": "integer"
+                                    },
+                                    "new": {
+                                      "type": "integer"
+                                    },
+                                    "biggestMoverId": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "biggestMovePct": {
+                                      "type": [
+                                        "number",
+                                        "null"
+                                      ]
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "trend": {
+                              "type": "object",
+                              "properties": {
+                                "direction": {
+                                  "type": "string",
+                                  "enum": [
+                                    "up",
+                                    "down",
+                                    "flat",
+                                    "unknown"
+                                  ]
+                                },
+                                "basis": {
+                                  "type": "string",
+                                  "enum": [
+                                    "cursor",
+                                    "provider_24h",
+                                    "none"
+                                  ]
+                                },
+                                "pct": {
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
+                                },
+                                "note": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "cursor": {
+                              "type": "string",
+                              "description": "Opaque signed cursor. Send it on your next /check to get the delta from this snapshot."
+                            },
+                            "notes": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "signature": {
+                          "type": "string"
+                        },
+                        "algorithm": {
+                          "type": "string",
+                          "const": "HMAC-SHA256"
+                        },
+                        "canonicalization": {
+                          "type": "string",
+                          "const": "sorted-json"
+                        }
+                      }
+                    },
+                    "payment": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "description": "Settlement receipt for this call — same content as X-PAYMENT-RESPONSE."
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-PAYMENT-RESPONSE": {
+                "description": "Base64 JSON settlement receipt.",
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentReceipt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query — names the bad parameter and includes worked examples.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "hint": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment required — dual-rail x402 challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentRequirements"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "check_failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Facilitator unreachable or settlement error — nothing was charged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/watch-key": {
+      "get": {
+        "summary": "Preview the watch key for a set of parameters (free)",
+        "description": "Cursors are scoped to a watch key. Use this to see what key your parameters normalize to before paying.",
+        "parameters": [
+          {
+            "name": "market",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "crypto",
+                "flight"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Watch key + id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "watchKey": {
+                      "type": "string"
+                    },
+                    "watchId": {
+                      "type": "string"
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query."
+          }
+        }
+      }
+    },
+    "/sources": {
+      "get": {
+        "summary": "Which price sources are live here (free)",
+        "responses": {
+          "200": {
+            "description": "Source status per market.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/verify": {
+      "post": {
+        "summary": "Verify a signed check (free)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "payload": {},
+                  "signature": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "payload",
+                  "signature"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signature check.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "valid": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body must be {payload, signature}."
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "summary": "Liveness + accepted rails (free)",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/x402": {
+      "get": {
+        "summary": "Machine-readable x402 manifest (free)",
+        "responses": {
+          "200": {
+            "description": "Manifest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PaymentRequirements": {
+        "type": "object",
+        "description": "x402 payment requirements returned with HTTP 402. `accepts` always carries BOTH rails — USDC on Base (EVM) and USDC on Solana — at the same price; the client picks one and names it in the `network` field of its X-PAYMENT payload.",
+        "properties": {
+          "x402Version": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string"
+          },
+          "accepts": {
+            "type": "array",
+            "description": "One entry per accepted payment rail.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "scheme": {
+                  "type": "string",
+                  "const": "exact"
+                },
+                "network": {
+                  "type": "string",
+                  "examples": [
+                    "base-sepolia",
+                    "solana"
+                  ]
+                },
+                "maxAmountRequired": {
+                  "type": "string",
+                  "description": "USDC atomic units (6 decimals)."
+                },
+                "resource": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "mimeType": {
+                  "type": "string"
+                },
+                "payTo": {
+                  "type": "string"
+                },
+                "maxTimeoutSeconds": {
+                  "type": "integer"
+                },
+                "asset": {
+                  "type": "string",
+                  "description": "USDC contract (EVM) or mint (Solana)."
+                },
+                "extra": {
+                  "type": "object",
+                  "description": "EVM: EIP-712 domain (name/version). Solana: {name, decimals, feePayer} — feePayer sponsors the SOL network fee so the buyer needs only USDC."
+                }
+              }
+            }
+          }
+        },
+        "examples": [
+          {
+            "x402Version": 1,
+            "error": "X-PAYMENT header is required",
+            "accepts": [
+              {
+                "scheme": "exact",
+                "network": "base-sepolia",
+                "maxAmountRequired": "2000",
+                "resource": "https://your-deployment.example.com/check",
+                "description": "x402-price-watch: GET /check",
+                "mimeType": "application/json",
+                "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+                "maxTimeoutSeconds": 60,
+                "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+                "extra": {
+                  "name": "USDC",
+                  "version": "2"
+                }
+              },
+              {
+                "scheme": "exact",
+                "network": "solana",
+                "maxAmountRequired": "2000",
+                "resource": "https://your-deployment.example.com/check",
+                "description": "x402-price-watch: GET /check",
+                "mimeType": "application/json",
+                "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+                "maxTimeoutSeconds": 60,
+                "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                "extra": {
+                  "name": "USD Coin",
+                  "decimals": 6,
+                  "feePayer": "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4",
+                  "amount": "2000"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "PaymentReceipt": {
+        "type": "object",
+        "description": "Settlement receipt, base64-JSON in the X-PAYMENT-RESPONSE header of every paid 200.",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "rail": {
+            "type": "string",
+            "enum": [
+              "evm",
+              "solana"
+            ]
+          },
+          "network": {
+            "type": "string"
+          },
+          "transaction": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "payer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "amount": {
+            "type": "string"
+          },
+          "asset": {
+            "type": "string",
+            "const": "USDC"
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4044",
+      "description": "local dev"
+    },
+    {
+      "url": "https://your-deployment.example.com",
+      "description": "self-hosted"
+    }
+  ]
+}

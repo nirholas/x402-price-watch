@@ -1,0 +1,307 @@
+{
+  "x402Version": 1,
+  "name": "x402-price-watch",
+  "description": "Pay-per-poll price watching — every check returns a fresh snapshot plus delta vs your cursor (flights via Amadeus, crypto via CoinGecko)",
+  "homepage": "https://nirholas.github.io/x402-price-watch/",
+  "repository": "https://github.com/nirholas/x402-price-watch",
+  "contact": "nichxbt@gmail.com",
+  "skill": "/skill.md",
+  "payment": {
+    "note": "Pay in USDC on Base or Solana — your client picks the rail. Every 402 challenge lists both.",
+    "rails": [
+      {
+        "scheme": "exact",
+        "network": "base-sepolia",
+        "asset": "USDC",
+        "assetAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+        "facilitator": "https://x402.org/facilitator"
+      },
+      {
+        "scheme": "exact",
+        "network": "solana",
+        "asset": "USDC",
+        "assetAddress": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+        "facilitator": "https://facilitator.payai.network"
+      }
+    ]
+  },
+  "resources": [
+    {
+      "resource": "GET /check",
+      "description": "One price poll. Returns a signed snapshot, the delta against the opaque cursor you supplied, a trend read, and a fresh cursor for the next check. Stateless: the cursor carries your history, so every paid call returns a complete artifact.",
+      "price": "$0.002",
+      "networks": [
+        "base-sepolia",
+        "solana"
+      ],
+      "asset": "USDC",
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "base-sepolia",
+          "asset": "USDC",
+          "assetAddress": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+          "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+          "facilitator": "https://x402.org/facilitator",
+          "maxAmountRequired": "2000"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana",
+          "asset": "USDC",
+          "assetAddress": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+          "facilitator": "https://facilitator.payai.network",
+          "maxAmountRequired": "2000",
+          "extra": {
+            "name": "USD Coin",
+            "decimals": 6,
+            "feePayer": "2wKupLR9q6wXYppw8Gr2NvWxKBUqm4PPJKkQfoxHDBg4"
+          }
+        }
+      ],
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "check": {
+            "type": "object",
+            "properties": {
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "checkId": {
+                    "type": "string"
+                  },
+                  "market": {
+                    "type": "string",
+                    "enum": [
+                      "crypto",
+                      "flight"
+                    ]
+                  },
+                  "watchKey": {
+                    "type": "string",
+                    "description": "Normalized watch identity. Cursors are scoped to it."
+                  },
+                  "source": {
+                    "type": "string",
+                    "enum": [
+                      "coingecko",
+                      "amadeus",
+                      "fixture"
+                    ]
+                  },
+                  "live": {
+                    "type": "boolean"
+                  },
+                  "observedAt": {
+                    "type": "string"
+                  },
+                  "snapshot": {
+                    "type": "object",
+                    "properties": {
+                      "items": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "label": {
+                              "type": "string"
+                            },
+                            "priceUsd": {
+                              "type": "number"
+                            },
+                            "extra": {
+                              "type": "object"
+                            }
+                          }
+                        }
+                      },
+                      "missing": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "delta": {
+                    "type": "object",
+                    "properties": {
+                      "hasCursor": {
+                        "type": "boolean"
+                      },
+                      "cursorStatus": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "applied",
+                          "malformed",
+                          "bad_signature",
+                          "wrong_watch",
+                          "unsupported_version"
+                        ]
+                      },
+                      "since": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "elapsedSeconds": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      },
+                      "changes": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "label": {
+                              "type": "string"
+                            },
+                            "previousUsd": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "currentUsd": {
+                              "type": "number"
+                            },
+                            "absUsd": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "pct": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "direction": {
+                              "type": "string",
+                              "enum": [
+                                "up",
+                                "down",
+                                "flat",
+                                "new"
+                              ]
+                            }
+                          }
+                        }
+                      },
+                      "summary": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "up": {
+                            "type": "integer"
+                          },
+                          "down": {
+                            "type": "integer"
+                          },
+                          "flat": {
+                            "type": "integer"
+                          },
+                          "new": {
+                            "type": "integer"
+                          },
+                          "biggestMoverId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "biggestMovePct": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "trend": {
+                    "type": "object",
+                    "properties": {
+                      "direction": {
+                        "type": "string",
+                        "enum": [
+                          "up",
+                          "down",
+                          "flat",
+                          "unknown"
+                        ]
+                      },
+                      "basis": {
+                        "type": "string",
+                        "enum": [
+                          "cursor",
+                          "provider_24h",
+                          "none"
+                        ]
+                      },
+                      "pct": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "note": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "cursor": {
+                    "type": "string",
+                    "description": "Opaque signed cursor. Send it on your next /check to get the delta from this snapshot."
+                  },
+                  "notes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "signature": {
+                "type": "string"
+              },
+              "algorithm": {
+                "type": "string",
+                "const": "HMAC-SHA256"
+              },
+              "canonicalization": {
+                "type": "string",
+                "const": "sorted-json"
+              }
+            }
+          },
+          "payment": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Settlement receipt for this call — same content as X-PAYMENT-RESPONSE."
+          }
+        }
+      }
+    }
+  ]
+}
