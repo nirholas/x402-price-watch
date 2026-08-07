@@ -3,6 +3,7 @@ import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { activeRails, paymentReceipt, paywall, usingSuiteDefaultPayTo } from "./payments.js";
+import { ROUTE_SCHEMAS } from "./schemas.js";
 import { amadeusConfigured } from "./amadeus.js";
 import { check, validateCheck, watchId, watchKeyFor } from "./service.js";
 import { usingDevSecret, verify } from "./sign.js";
@@ -25,7 +26,7 @@ const rails = activeRails();
 
 const app = express();
 app.use(express.json({ limit: "256kb" }));
-app.use(paywall(PRICES, { service: "x402-price-watch", descriptions: DESCRIPTIONS }));
+app.use(paywall(PRICES, { service: "x402-price-watch", descriptions: DESCRIPTIONS, schemas: ROUTE_SCHEMAS }));
 
 // ---------- paid routes ----------
 
