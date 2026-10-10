@@ -1,0 +1,28 @@
+# x402-price-watch
+
+> Pay-per-poll price watching: every check returns a fresh snapshot plus delta vs your cursor (flights via Amadeus, crypto via CoinGecko)
+
+x402-price-watch is an open-source repository by nirholas, part of the three.ws ecosystem.
+
+## Docs
+
+- [README](https://github.com/nirholas/x402-price-watch/blob/HEAD/README.md): install, usage and reference
+- [Why x402 for this](https://github.com/nirholas/x402-price-watch/blob/HEAD/README.md#why-x402-for-this)
+- [Quickstart](https://github.com/nirholas/x402-price-watch/blob/HEAD/README.md#quickstart)
+- [API](https://github.com/nirholas/x402-price-watch/blob/HEAD/README.md#api)
+- [The cursor is the whole idea](https://github.com/nirholas/x402-price-watch/blob/HEAD/README.md#the-cursor-is-the-whole-idea)
+- [How x402 works: two rails, one flow](https://github.com/nirholas/x402-price-watch/blob/HEAD/README.md#how-x402-works-two-rails-one-flow)
+- [Real backend / API keys](https://github.com/nirholas/x402-price-watch/blob/HEAD/README.md#real-backend-api-keys)
+- [For AI agents](https://github.com/nirholas/x402-price-watch/blob/HEAD/README.md#for-ai-agents)
+- [Docs](https://github.com/nirholas/x402-price-watch/blob/HEAD/README.md#docs)
+- [AGENTS.md](https://github.com/nirholas/x402-price-watch/blob/HEAD/AGENTS.md): guidance for coding agents
+- [Full text for LLMs](https://github.com/nirholas/x402-price-watch/blob/HEAD/llms-full.txt): the README inlined
+
+## Project
+
+- [Source](https://github.com/nirholas/x402-price-watch)
+- [Issues](https://github.com/nirholas/x402-price-watch/issues)
+- [Discussions](https://github.com/nirholas/x402-price-watch/discussions)
+- [Homepage](https://nirholas.github.io/x402-price-watch/)
+- [three.ws](https://three.ws): the platform this is part of
+- [All repositories by nirholas](https://github.com/nirholas/nirholas#readme)
