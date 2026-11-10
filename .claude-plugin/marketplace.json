@@ -1,0 +1,22 @@
+{
+  "name": "x402-price-watch",
+  "owner": {
+    "name": "nirholas"
+  },
+  "description": "Run the x402-price-watch service and poll crypto and flight prices, getting a fresh snapshot and a delta against your own cursor, paid per poll via x402.",
+  "plugins": [
+    {
+      "name": "x402-price-watch",
+      "source": "./plugins/x402-price-watch",
+      "description": "Run the x402-price-watch service and poll crypto and flight prices, getting a fresh snapshot and a delta against your own cursor, paid per poll via x402.",
+      "category": "finance",
+      "tags": [
+        "x402",
+        "price-watch",
+        "coingecko",
+        "amadeus",
+        "usdc"
+      ]
+    }
+  ]
+}
